@@ -5,11 +5,11 @@ from lib import main
 from lib import detector
 
 # Build the flask app
-app = Flask(__name__)
+application = Flask(__name__)
 
 # setup for the flask app
-app.secret_key = "secret key"
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+application.secret_key = "secret key"
+application.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 # Get current path
 global path
@@ -28,18 +28,18 @@ if not os.path.isdir(DOWNLOAD_FOLDER):
 
 
 # more setup for flask app
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER   
+application.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+application.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER   
 
 
 # ------------------------------------------------------------------------------------------------------------------
 
-@app.route('/')
+@application.route('/')
 def upload_form():
 	return render_template("upload.html")
 
 
-@app.route('/', methods = ["POST"])
+@application.route('/', methods = ["POST"])
 def upload_file():
 
 	# delete the images uploaded previously
@@ -58,7 +58,7 @@ def upload_file():
 		main.main(app.config['UPLOAD_FOLDER'], app.config['DOWNLOAD_FOLDER'])
 		return redirect("/download")
 
-@app.route('/download/', methods = ["GET"])
+@application.route('/download/', methods = ["GET"])
 def download_file():
 	return send_file("out.csv", as_attachment = True)
 
