@@ -4,7 +4,12 @@ import os
 import json
 from lib import main
 from lib import detector
+from werkzeug.utils import secure_filename
 
+ALLOWED_EXTENSIONS = set(['png', 'json'])
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Build the flask app
 app = Flask(__name__)
@@ -14,7 +19,6 @@ app.secret_key = "secret key"
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 # Get current path
-global path
 path = os.getcwd()
 
 # file Upload
@@ -43,35 +47,39 @@ app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER
 
 @app.route('/')
 def upload_form():
-	flash("The page has been initialized")
 	return render_template("upload.html")
 
 
 @app.route('/', methods = ["POST"])
 def upload_file():
 
-	print("upload_file start")
 	# delete the images uploaded previously 
 	for f in os.listdir(app.config['UPLOAD_FOLDER']):
 		os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f))
 
-	print(request.method)
+	for f in os.listdir(app.config['COLOR_FOLDER']):
+		os.remove(os.path.join(app.config['COLOR_FOLDER'], f))
 
 	if request.method == "POST":
-		print("enter post section")
 		if 'files1[]' not in request.files:
 			return redirect(request.url)
 		if 'files2' not in request.files:
 			return redirect(request.url)
 
 		imagefiles = request.files.getlist("files1[]")
-		print(imagefiles)
 		colorfile = request.files.get("files2")
-		print(colorfile)
+
+		for file in imagefiles:
+			if file.filename == '':
+				return redirect(redirect.url)
+
+		if colorfile.filename == '':
+			return redirect(request.url)
 
 		# process the color definition
-		colorfile.save(os.path.join(app.config['COLOR_FOLDER'], colorfile.filename))
-
+		if colorfile and allowed_file(colorfile.filename):
+			filename = secure_filename(colorfile.filename)
+			colorfile.save(os.path.join(app.config['COLOR_FOLDER'], filename))
 
 		color_spec_dicts = {}
 		with open(os.path.join(app.config['COLOR_FOLDER'], colorfile.filename)) as json_file:
@@ -81,10 +89,11 @@ def upload_file():
 				for sub_key, sub_value in value.items():
 					color_spec_dicts[key].append(sub_value)
 
-
 		# process the image 
 		for file in imagefiles:
-			file.save(os.path.join(app.config['UPLOAD_FOLDER'], file.filename))
+			if file and allowed_file(file.filename):
+				filename = secure_filename(file.filename)
+				file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
 		main.main(color_spec_dicts, app.config['UPLOAD_FOLDER'], app.config['DOWNLOAD_FOLDER'])
 
